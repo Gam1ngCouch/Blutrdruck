@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blutdruckdaten Aufzeichnung</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 400px;
+            margin: 50px auto;
+            background-color: #1e1e1e;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+        }
+        h1 {
+            text-align: center;
+            color: #ffffff;
+        }
+        label {
+            color: #e0e0e0;
+        }
+        input[type="number"], input[type="submit"], button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background-color: #2e2e2e;
+            color: #e0e0e0;
+        }
+        input[type="submit"] {
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #218838;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .data-entry {
+            background-color: #333;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #444;
+            color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Blutdruck Aufzeichnung</h1>
+    <form id="blutdruckForm">
+        <label for="sys">Systolisch:</label>
+        <input type="number" id="sys" name="sys" required>
+
+        <label for="dia">Diastolisch:</label>
+        <input type="number" id="dia" name="dia" required>
+
+        <label for="puls">Puls:</label>
+        <input type="number" id="puls" name="puls" required>
+
+        <input type="submit" value="Daten speichern">
+    </form>
+
+    <div id="message"></div>
+    <h2>Gespeicherte Daten</h2>
+    <div id="savedData"></div>
+    <button id="clearData">Alle Daten löschen</button>
+    <button id="exportPdf">Daten als PDF exportieren</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+    document.getElementById('blutdruckForm').addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        const sys = document.getElementById('sys').value;
+        const dia = document.getElementById('dia').value;
+        const puls = document.getElementById('puls').value;
+        const timestamp = new Date().toLocaleString();
+
+        const entry = { sys, dia, puls, timestamp };
+
+        // Daten aus dem Local Storage holen
+        let entries = JSON.parse(localStorage.getItem('blutdruckdaten')) || [];
+        entries.push(entry);
+
+        // Daten im Local Storage speichern
+        localStorage.setItem('blutdruckdaten', JSON.stringify(entries));
+
+        document.getElementById('message').textContent = "Daten erfolgreich gespeichert!";
+        displayData();
+    });
+
+    function displayData() {
+        const savedData = document.getElementById('savedData');
+        const entries = JSON.parse(localStorage.getItem('blutdruckdaten')) || [];
+
+        // Gespeicherte Daten anzeigen
+        savedData.innerHTML = '';
+        entries.forEach((entry, index) => {
+            const div = document.createElement('div');
+            div.className = 'data-entry';
+            div.innerHTML = `Eintrag ${index + 1}: <br>
+                            Systolisch: ${entry.sys}, Diastolisch: ${entry.dia}, Puls: ${entry.puls} <br>
+                            Zeitpunkt: ${entry.timestamp}`;
+            savedData.appendChild(div);
+        });
+    }
+
+    document.getElementById('clearData').addEventListener('click', function () {
+        localStorage.removeItem('blutdruckdaten');
+        displayData();
+    });
+
+    // Daten als PDF exportieren
+    document.getElementById('exportPdf').addEventListener('click', function () {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        let entries = JSON.parse(localStorage.getItem('blutdruckdaten')) || [];
+        
+        doc.setFontSize(16);
+        doc.text('Blutdruckdaten Aufzeichnung', 10, 10);
+
+        doc.setFontSize(12);
+        let yPos = 20;
+
+        entries.forEach((entry, index) => {
+            doc.text(`Eintrag ${index + 1}`, 10, yPos);
+            doc.text(`Systolisch: ${entry.sys}, Diastolisch: ${entry.dia}, Puls: ${entry.puls}`, 10, yPos + 10);
+            doc.text(`Zeitpunkt: ${entry.timestamp}`, 10, yPos + 20);
+            yPos += 30; // Abstand zwischen den Einträgen
+        });
+
+        doc.save('blutdruckdaten.pdf');
+    });
+
+    // Daten beim Laden der Seite anzeigen
+    window.onload = displayData;
+</script>
+
+</body>
+</html>
